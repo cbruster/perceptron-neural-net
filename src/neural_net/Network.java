@@ -2,13 +2,9 @@ package neural_net;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -17,7 +13,6 @@ import javax.imageio.ImageIO;
 import linearAlgebra.Matrix;
 import linearAlgebra.Vector;
 
-@SuppressWarnings("unused")
 //TODO make this shit serializeable 
 public class Network {
 	
@@ -29,6 +24,7 @@ public class Network {
 		
 		//variables
 		int[] netParams = {784, 16, 16, 10};
+		@SuppressWarnings("unused")
 		Object[] trainingData;
 		
 		//program
@@ -101,7 +97,6 @@ public class Network {
 	
 	private static void getInputAndMakePrediction(int arg) throws IOException
 	{
-//		BufferedImage image = ImageIO.read(new File("PATH"));
 		BufferedImage image = ImageIO.read(trainingImages[arg]);
 		Raster x = image.getData();
 		
@@ -116,7 +111,8 @@ public class Network {
 					i++;
 				}
 			} 
-		} while(false);
+		} 
+		while(false);
 		
 		//feeding the data forward in the network
 		for(int i = 1; i < layers.length; i++) {
@@ -218,19 +214,6 @@ public class Network {
 			activations[i] = neurons[i].getActivation();
 		}
 		return new Vector(activations);
-	}
-
-	private static Vector getBiasVectorForLayer(int layer) 
-	{
-		Neuron[] neurons = getNeuronsInLayer(layer);
-		double[] biases = new double[neurons.length];
-		Vector biasVector;
-		
-		for(int i = 0; i < neurons.length; i++) {
-			biases[i] = neurons[i].getBias();
-		}
-		biasVector = new Vector(biases);
-		return biasVector;
 	}
 	
 	private static Neuron[] getNeuronsInLayer(int layer) 
@@ -344,21 +327,19 @@ class Neuron {
 		} else throw new RuntimeException("Cannot set activation of a neuron that is not in the input layer.");
 	}
 	
-	double getActivation() 
-	{
-		return this.activation;
-	}
-	
-	double getBias() 
-	{
-		return this.bias;
-	}
-	
 	void setBias(double arg) 
 	{
 		if(isInputLayerNeuron == false) {
 			this.bias = arg;
 		} else throw new RuntimeException("Cannot set bias of a neuron that is in the input layer.");
+	}
+	
+	double getActivation() {
+		return this.activation;
+	}
+	
+	double getBias() {
+		return this.bias;
 	}
 	
 	double[] getWeightsActingOnNeuron() 
@@ -381,11 +362,10 @@ class Neuron {
 		}
 	}
 	
-	void activate() 
-	{	
+	void activate() {	
 		this.activation = Network.sigmoid(this.zValue());
 	}
-	// using vector objects is not required here, but it makes the operation more explicit
+	
 	double zValue() 
 	{	
 		Synapse[] s = this.synapses;
@@ -404,8 +384,8 @@ class Neuron {
 		
 		z = Matrix.dotProduct(
 				activationVector.getComponents(), 
-				weightVector.getComponents()) + 
-				this.bias;
+				weightVector.getComponents()
+				) + this.bias;
 		
 		return z;
 	}
@@ -417,7 +397,8 @@ class Synapse {
 	private final Neuron from;
 	private final Neuron to;
 	
-	Synapse(Neuron from, Neuron to) {
+	Synapse(Neuron from, Neuron to) 
+	{
 		this.from = from;
 		this.to = to;
 	}
