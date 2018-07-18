@@ -66,7 +66,7 @@ public class Network {
 	
 	private static void makeTrainingData() { //TODO take params, and return Object[] = {File[], int[]} files and labels respectively
 		
-		File dir = new File("C:\\Users\\Clayton\\Desktop\\mnist_data\\mnist_jpgfiles\\train");
+		File dir = new File("PATH");
 		File[] fileArray = dir.listFiles();
 		int[] labels = new int[fileArray.length];
 		List<File> fileList = new ArrayList<File>();
