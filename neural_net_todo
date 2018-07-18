@@ -1,0 +1,31 @@
+Things to do on the NN class
+
+- Make the class serializeable
+- Refactor some of the primary methods
+- Test that state is maintained and vector can be used to predict after training. 
+
+Things that are done:
+
+- Rework vector class and make it not shit
+- Implement network feed-forward decision making
+- Method to get weights of a synapse layer as a matrix
+- Initialize weights and biases randomly in constructor for Network 
+- Method to get biases of a neuron layer as a vector
+- Finish method to get characteristic vector of the network
+- Error backprop is done, stochastic gradient descent to be implemented in training algo
+- Implement input handling PROPERLY
+- Build training algo
+- Fix out of bounds error when indexing gradient
+- Fix NaN activations on output layer. Suspect that gradient vector is being filled with NaNs before application.
+- Fix issues with training
+
+Tests to do:
+- Try training the network
+- Test that .tif images return doubles when read by input handler
+
+Tests done:
+- Put in random values in input layer and test feedforward. If successful, activation vectors should
+all have nonzero/random values between 0 and 1.
+- Show network is initialized completely by way of showing characteristic vector
+- Test prediction based on single training example input (make sure output layer activates basically)
+- Test backpropagation based on single training example (make sure the network changes its shit, basically)
