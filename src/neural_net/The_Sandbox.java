@@ -1,19 +1,11 @@
 package neural_net;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
-import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import javax.imageio.ImageIO;
-import linearAlgebra.Matrix;
-import linearAlgebra.Vector;
 
-@SuppressWarnings("unused")
 public class The_Sandbox {
 	
-	public static void main(String[] args) throws IOException {
-		
+	public static void main(String[] args) throws IOException 
+	{	
 		//variables
 		int[] netParams = {784, 16, 16, 10};
 		Network net;
@@ -32,5 +24,5 @@ public class The_Sandbox {
 		
 		net.saveState();
 	}
-	
+
 }
