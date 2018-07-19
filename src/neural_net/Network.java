@@ -3,7 +3,12 @@ package neural_net;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,33 +18,12 @@ import javax.imageio.ImageIO;
 import linearAlgebra.Matrix;
 import linearAlgebra.Vector;
 
-//TODO make this shit serializeable 
-public class Network {
+public final class Network implements Serializable {
 	
-	public static Neuron[][] layers;
-	public static File[] trainingImages;
-	public static int[] trainingLabels;
+	private static final long serialVersionUID = -6616219702486782863L;
+	private Neuron[][] layers;
 	
-	public static void main(String[] args) throws IOException {
-		
-		//variables
-		int[] netParams = {784, 16, 16, 10};
-		@SuppressWarnings("unused")
-		Object[] trainingData;
-		
-		//program
-		long start = System.nanoTime();
-		buildNetwork(netParams);
-		System.out.println("Took "  + (System.nanoTime() - start)/1e9 + " to build the network");
-		start = System.nanoTime();
-		makeTrainingData();
-		System.out.println("Took "  + (System.nanoTime() - start)/1e9 + " to make training data");
-		start = System.nanoTime();
-		trainNetwork(1200, 50);
-		System.out.println("Took "  + (System.nanoTime() - start)/1e9 + " to train.");
-	}
-	
-	private static void buildNetwork(int[] networkParams) 
+	public Network(int[] networkParams) 
 	{
 		int numLayers = networkParams.length;
 		layers = new Neuron[numLayers][];
@@ -50,29 +34,47 @@ public class Network {
 			
 			for(int j = 0; j < layerSize; j++) {
 				layers[i][j] = new Neuron();
-//				System.out.println("Placing neuron in layer " + i + " at index " + j);
 				if(i == 0) {
 					layers[i][j].isInputLayerNeuron = true;
 				}
-				if(i >= 1){
+				if(i >= 1) {
 					layers[i][j].isInputLayerNeuron = false;
 					layers[i][j].makeConnections(layers[i-1]); // sets weights of connections random
 					layers[i][j].setBias(Math.random());       // randomize neuron bias
 				}
 			}
 		}
-//		System.out.println("Neural net is built!");
 	}
 	
-	private static void makeTrainingData() { //TODO take params, and return Object[] = {File[], int[]} files and labels respectively
+    public void saveState() throws IOException 
+    {
+    	ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("network-state.bin"));
+    	out.writeObject(this);
+    	out.close();
+    }
+    
+    public void restoreState() throws IOException 
+    {
+    	ObjectInputStream in = new ObjectInputStream(new FileInputStream("network-state.bin"));
+    	
+    	try {
+			in.defaultReadObject();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+    	in.close();
+    }
+    
+	public static Object[] makeTrainingData() { //TODO take in training data path as a parameter?
 		
-		File dir = new File("PATH");
+		File dir = new File("C:\\Users\\Clayton\\Desktop\\mnist_data\\mnist_jpgfiles\\train");
 		File[] fileArray = dir.listFiles();
 		int[] labels = new int[fileArray.length];
 		List<File> fileList = new ArrayList<File>();
 		Pattern p = Pattern.compile("\\d+(?=_)");
 		Matcher m;
 		int num = 0;
+		Object[] trainingData = new Object[2];
 		
 		// add files to collection for shuffling
 		for(int i = 0; i < fileArray.length; i++) {
@@ -90,14 +92,88 @@ public class Network {
 			}
 			labels[i] = num;
 		}
-		
-		trainingImages = fileArray;
-		trainingLabels = labels;
+		trainingData[0] = fileArray;
+		trainingData[1] = labels;
+		return trainingData;
 	}
 	
-	private static void getInputAndMakePrediction(int arg) throws IOException
+	public void trainNetwork(int epochs, int batchSize, Object[] trainingData) throws IOException
 	{
-		BufferedImage image = ImageIO.read(trainingImages[arg]);
+		int e = 0; //counting epochs
+		int g = 0; //indexing gradient array
+		int x = 0; //indexing training images
+		int l = 0; //indexing labels
+		File[] trainingImages = (File[]) trainingData[0];
+		int[] trainingLabels = (int[]) trainingData[1];
+		double[] gradient;
+		Vector gradientVector = null;
+		Vector[] outcomes = new Vector[batchSize];
+		Matrix expectedOutcomes;
+		
+		while (e < epochs) {
+			e++;
+			//making the matrix for storing expected values for backpropagation
+			for(int i = 0; i < batchSize; i++) {
+				int num = trainingLabels[l];
+				l++;
+				double[] column = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+				column[num] = 1.0d;
+				outcomes[i] = new Vector(column);
+			}
+			expectedOutcomes = Matrix.vectorsToMatrix(outcomes);
+			
+			//forming gradient stochastically via backpropagation 
+			for(int i = 0; i < batchSize; i++) {
+				
+				getInputAndMakePrediction(trainingImages[x]);
+				x++;
+				
+				// showing outputs while training
+//				Vector[] exampleOutput = {
+//						getActivationVectorForLayer(layers.length - 1), 
+//						expectedOutcomes.getColumnAsVector(i)
+//						};
+//				System.out.println("Prediction vs Expected");
+//				Matrix.vectorsToMatrix(exampleOutput).putMatrix();
+				
+				// backpropagation is done here
+				if(i == 0) {
+					gradientVector = backprop(expectedOutcomes.getColumnAsVector(0));
+				} else {
+					gradientVector = Vector.Add(
+							gradientVector, 
+							backprop(expectedOutcomes.getColumnAsVector(i)));
+				}
+			}
+			gradientVector.scale(1.0d / (double) batchSize);
+			gradient = gradientVector.getComponents();
+			
+			//modify network params based on gradient
+			g = 0;
+			for(int i = 1; i < layers.length; i++) {
+				//go through neurons in layer setting its synapses to new values
+				for(int j = 0; j < layers[i].length; j++) {
+					for(Synapse s : layers[i][j].getSynapses()) {
+						s.setWeight(
+								s.getWeight() + 
+								gradient[g]);
+						g++;
+					}
+				}
+				//go through the neurons in the layer again to set biases
+				for(int j = 0; j < layers[i].length; j++) {
+					layers[i][j].setBias(
+							layers[i][j].getBias() + 
+							gradient[g]);
+					g++;
+				}
+			}
+		}
+	}
+	
+	private void getInputAndMakePrediction(File img) throws IOException
+	{
+		BufferedImage image = ImageIO.read(img);
 		Raster x = image.getData();
 		
 		//setting activation layer
@@ -122,109 +198,10 @@ public class Network {
 		}
 	}
 	
-	private static void trainNetwork(int epochs, int batchSize) throws IOException
-	{
-		int e = 0; //counting epochs
-		int g = 0; //indexing gradient array
-		int x = 0; //indexing training images
-		int l = 0; //indexing labels
-		double[] gradient;
-		Vector gradientVector = null;
-		Vector[] outcomes = new Vector[batchSize];
-		Matrix expectedOutcomes;
-		
-		while (e < epochs) {
-			e++;
-			//making the matrix for storing expected values for backpropagation
-			for(int i = 0; i < batchSize; i++) {
-				int num = trainingLabels[l];
-				l++;
-				double[] column = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-				column[num] = 1.0d;
-				outcomes[i] = new Vector(column);
-			}
-			expectedOutcomes = Matrix.vectorsToMatrix(outcomes);
-			
-			//forming gradient stochastically via backpropagation 
-			for(int i = 0; i < batchSize; i++) {
-				
-				getInputAndMakePrediction(x);
-				x++;
-				
-				// showing outputs while training
-				Vector[] exampleOutput = {getActivationVectorForLayer(layers.length - 1), expectedOutcomes.getColumnAsVector(i)};
-				System.out.println("Prediction vs Expected");
-				Matrix.vectorsToMatrix(exampleOutput).putMatrix();
-				
-				// backpropagation is done here
-				if(i == 0) {
-					gradientVector = backprop(expectedOutcomes.getColumnAsVector(0));
-				} else {
-					gradientVector = Vector.Add(
-							gradientVector, 
-							backprop(expectedOutcomes.getColumnAsVector(i)));
-				}
-			}
-			gradientVector.scale(1.0d / (double) batchSize);
-			gradient = gradientVector.getComponents();
-			
-			//modify network params based on gradient
-			g = 0;
-			for(int i = 1; i < Network.layers.length; i++) {
-				//go through neurons in layer setting its synapses to new values
-				for(int j = 0; j < layers[i].length; j++) {
-					for(Synapse s : layers[i][j].synapses) {
-						s.setWeight(
-								s.getWeight() + 
-								gradient[g]);
-						g++;
-					}
-				}
-				//go through the neurons in the layer again to set biases
-				for(int j = 0; j < layers[i].length; j++) {
-					layers[i][j].setBias(
-							layers[i][j].getBias() + 
-							gradient[g]);
-					g++;
-				}
-			}
-		}
-	}
-	
-	private static Matrix getWeightMatrixForLayer(int layer)
-	{
-		if(layer == 0) {
-			return null;
-		} else {
-			int N = layers[layer].length;
-			double[][] weightMatrixData = new double[N][];
-			for(int i = 0; i < N; i++) {
-				weightMatrixData[i] = layers[layer][i].getWeightsActingOnNeuron();
-			}
-			return new Matrix(weightMatrixData);
-		}
-	}
-
-	private static Vector getActivationVectorForLayer(int layer) 
-	{
-		Neuron[] neurons = getNeuronsInLayer(layer);
-		double[] activations = new double[neurons.length];
-		
-		for(int i = 0; i < neurons.length; i++) {
-			activations[i] = neurons[i].getActivation();
-		}
-		return new Vector(activations);
-	}
-	
-	private static Neuron[] getNeuronsInLayer(int layer) 
-	{
-		return layers[layer];
-	}
-
-	private static Vector backprop(Vector expected)
+	private Vector backprop(Vector expected)
 	{
 		//variables
-		int lastLayer = layers.length - 1; //starting point for algorithm
+		int lastLayer = this.layers.length - 1; //starting point for algorithm
 		double[] errorComponents; // temp storage for vector components to index directly
 		double[] activComponents; // temp storage for activation components to index directly
 		double[] gradientArray;
@@ -282,6 +259,36 @@ public class Network {
 		return new Vector(gradientArray);
 	}
 	
+	private Matrix getWeightMatrixForLayer(int layer)
+	{
+		if(layer == 0) {
+			return null;
+		} else {
+			int N = layers[layer].length;
+			double[][] weightMatrixData = new double[N][];
+			for(int i = 0; i < N; i++) {
+				weightMatrixData[i] = layers[layer][i].getWeightsActingOnNeuron();
+			}
+			return new Matrix(weightMatrixData);
+		}
+	}
+
+	private Vector getActivationVectorForLayer(int layer) 
+	{
+		Neuron[] neurons = getNeuronsInLayer(layer);
+		double[] activations = new double[neurons.length];
+		
+		for(int i = 0; i < neurons.length; i++) {
+			activations[i] = neurons[i].getActivation();
+		}
+		return new Vector(activations);
+	}
+	
+	private Neuron[] getNeuronsInLayer(int layer) 
+	{
+		return layers[layer];
+	}
+	
 	/* Misc methods that are useful */
 	
 	// the sigmoid function
@@ -295,7 +302,7 @@ public class Network {
 		return Math.exp(z) / Math.pow((Math.exp(z) + 1.0d), 2);
 	}
 	// derivative of a layer's activation
-	private static Vector sigPrimeVector(int layer) 
+	private Vector sigPrimeVector(int layer) 
 	{
 		Neuron[] neurons = getNeuronsInLayer(layer);
 		double[] sigPrimeZ = new double[neurons.length];
@@ -307,12 +314,13 @@ public class Network {
 	}
 }
 
-class Neuron {
+class Neuron implements Serializable {
 	
+	private static final long serialVersionUID = -5790099554576665574L;
 	protected boolean isInputLayerNeuron;
 	private double activation;   // range is 0 to 1 as double
-	private double bias;        // if this is a bias neuron, sigmoid will add a bias in calc for activation
-	protected Synapse[] synapses;
+	private double bias;         // if this is a bias neuron, bias is added into zValue()
+	private Synapse[] synapses;
 	
 	Neuron() 
 	{
@@ -327,19 +335,23 @@ class Neuron {
 		} else throw new RuntimeException("Cannot set activation of a neuron that is not in the input layer.");
 	}
 	
+	double getActivation() {
+		return this.activation;
+	}
+	
 	void setBias(double arg) 
 	{
 		if(isInputLayerNeuron == false) {
 			this.bias = arg;
 		} else throw new RuntimeException("Cannot set bias of a neuron that is in the input layer.");
 	}
-	
-	double getActivation() {
-		return this.activation;
-	}
-	
+
 	double getBias() {
 		return this.bias;
+	}
+	
+	Synapse[] getSynapses() {
+		return this.synapses;
 	}
 	
 	double[] getWeightsActingOnNeuron() 
@@ -352,7 +364,7 @@ class Neuron {
 		return weightArray;
 	}
 
-	//build connections between a layer and a node in the next layer
+	//build connections between previous layer and this neuron
 	void makeConnections(Neuron[] layer) 
 	{
 		this.synapses = new Synapse[layer.length];
@@ -366,7 +378,7 @@ class Neuron {
 		this.activation = Network.sigmoid(this.zValue());
 	}
 	
-	double zValue() 
+	double zValue() //sum of signals from connected neurons + bias. 
 	{	
 		Synapse[] s = this.synapses;
 		Vector weightVector;
@@ -391,8 +403,9 @@ class Neuron {
 	}
 }
 
-class Synapse {
+class Synapse implements Serializable {
 	
+	private static final long serialVersionUID = -4867691813220484408L;
 	private double weight;
 	private final Neuron from;
 	private final Neuron to;
