@@ -127,7 +127,7 @@ public final class Network implements Serializable {
 				
 				getInputAndMakePrediction(trainingImages[x]);
 				x++;
-				
+
 				// showing outputs while training
 //				Vector[] exampleOutput = {
 //						getActivationVectorForLayer(layers.length - 1), 
