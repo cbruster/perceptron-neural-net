@@ -1,1 +1,1 @@
-# babbys-first-neural-net
+# perceptron-neural-net
