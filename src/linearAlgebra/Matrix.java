@@ -122,7 +122,7 @@ public class Matrix {
 	}
 	
 	//matrix multiplication
-	public Matrix mMultiply(Matrix arg) {
+	public Matrix multiply(Matrix arg) {
 		Matrix res = new Matrix(this.rows, arg.cols);
 		if (this.cols != arg.rows)
 			throw new RuntimeException("Illegal matrix dimensions.");
@@ -294,6 +294,19 @@ public class Matrix {
 		double dotProd = 0;
 		for(int i = 0; i < row.length; i++) {
 			dotProd += row[i] * col[i];
+		}
+		return dotProd;
+	}
+	
+	public static double dotProduct(Matrix a, Matrix b) {
+		if(a.rows != b.cols)
+			throw new RuntimeException("Cannot take dotProduct: Illegal matrix dimensions.");
+		double dotProd = 0.0d;
+		Matrix res = a.multiply(b);
+		for(int i = 0; i < res.rows; i++) {
+			for(int j = 0; j < res.cols; j++) {
+				dotProd += res.matrix[i][j];
+			}
 		}
 		return dotProd;
 	}

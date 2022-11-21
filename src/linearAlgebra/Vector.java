@@ -5,9 +5,11 @@ public class Vector extends Matrix {
 	// A vector is truly a matrix with one column. This class is an explicit object
 	// that allows for this sort of treatment. 
 	
-	public Vector(double[] arg) {
+	public Vector(double[] arg) 
+	{
 		super(arg.length, 1);
-		for(int i = 0; i < arg.length; i++) {
+		for(int i = 0; i < arg.length; i++) 
+		{
 			this.matrix[i][0] = arg[i];
 		}
 	}
@@ -18,7 +20,8 @@ public class Vector extends Matrix {
 	}
 	
 	// the matrix field of a vector isn't meant to be used directly
-	public double[] getComponents() {
+	public double[] getComponents() 
+	{
 		return this.getColumnAsArray(0);
 	}
 	
@@ -47,6 +50,8 @@ public class Vector extends Matrix {
 		
 	}
 	
+	//the hadamard product is when you multiply equivalent components and take those products
+	//as the components of a new vector. 
 	public static Vector hadamard(Vector arg1, Vector arg2) 
 	{
 		double[] a = arg1.getComponents();
