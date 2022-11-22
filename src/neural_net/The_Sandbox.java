@@ -19,7 +19,7 @@ public class The_Sandbox
 	//randomizes the order of the test data, 10k images, which is entirely separate from the training data
 	public static Object[] fetchTestData()
 	{
-		File dir = new File("C:\\Users\\Clayton\\Desktop\\mnist_data\\mnist_jpgfiles\\test");
+		File dir = new File("path"); //path to test data
 		File[] fileArray = dir.listFiles();
 		int[] labels = new int[fileArray.length];
 

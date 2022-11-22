@@ -72,7 +72,7 @@ public final class Network implements Serializable {
     //grabs the 50k image set for training data and randomizes it, and parses the filenames for labels
 	public static Object[] makeTrainingData()
 	{
-		File dir = new File("C:\\Users\\Clayton\\Desktop\\mnist_data\\mnist_jpgfiles\\train");
+		File dir = new File("path"); //path to training data
 		File[] fileArray = dir.listFiles();
 		int[] labels = new int[fileArray.length];
 		List<File> fileList = new ArrayList<File>();
